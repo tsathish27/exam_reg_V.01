@@ -1,0 +1,143 @@
+/* General container styling */
+.register-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 40px auto;
+  padding: 20px;
+  width: 90%;
+  max-width: 900px;
+}
+
+/* Form styling */
+.register-form {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  background: #ffffff;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Left and right sections of the form */
+.form-left, .form-right {
+  flex: 1;
+  margin: 0 15px;
+}
+
+/* Form group styling */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="file"] {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.form-group input[type="file"] {
+  padding: 5px;
+}
+
+/* Checkbox styling */
+.subjects {
+  display: flex;
+  flex-direction: column;
+}
+
+.subject-checkbox {
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.subject-checkbox input {
+  margin-right: 12px;
+  cursor: pointer;
+}
+
+.subject-checkbox label {
+  font-size: 14px;
+  color: #555;
+}
+
+/* Button styling */
+.register-button {
+  padding: 12px 20px;
+  background-color: #007bff;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.register-button:hover {
+  background-color: #0056b3;
+}
+
+/* Error message styling */
+.error {
+  color: #d9534f;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+/* Popup/modal styling */
+.popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.popup-content {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  width: 300px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.popup-content p {
+  margin-bottom: 20px;
+  font-size: 16px;
+  color: #333;
+}
+
+.popup-content button {
+  background: #007bff;
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.popup-content button:hover {
+  background: #0056b3;
+}
