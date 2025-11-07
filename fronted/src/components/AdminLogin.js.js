@@ -8,9 +8,16 @@ const AdminLogin = ({ setToken }) => {
   const handleLogin = async () => {
     try {
       const response = await axios.post('http://localhost:3001/admin/login', { username, password });
-      setToken(response.data.token);
+      if (response.data.success) {
+        setToken(response.data.token);
+        localStorage.setItem('adminToken', response.data.token);
+        alert('Login successful!');
+      } else {
+        alert('Login failed: ' + response.data.message);
+      }
     } catch (error) {
       console.error('Login failed', error);
+      alert('Login failed: ' + (error.response?.data?.message || 'Invalid credentials'));
     }
   };
 

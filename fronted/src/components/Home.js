@@ -30,8 +30,12 @@ function Home() {
           <Link to="/hod-login">
             <button className='btn1'>HOD Login</button>
           </Link>
-          <Link to="/admin">
+          {/* <Link to="/admin">
             <button className='btn1'>Admin Login</button>
+          </Link> */}
+
+          <Link to="/admin1">
+            <button className='btn1'>Admin dashboard</button>
           </Link>
         </ul>
       </div>

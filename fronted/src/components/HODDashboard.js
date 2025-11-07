@@ -136,7 +136,7 @@ function HODDashboard() {
     navigate('/hod-login');
   };
 
-  const departmentName = 'CSE';
+  const departmentName = '';
 
   return (
     <div className="dashboard-container">
