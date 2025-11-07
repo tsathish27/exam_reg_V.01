@@ -507,6 +507,7 @@ const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 // const { PDFDocument, rgb } = require('pdf-lib');
 const generateHallTicket = require('./hallTicketGenerator'); 
+const adminRoutes = require('./routes/admin'); 
 require('dotenv').config();
 
 // ... rest of your app.js code
@@ -541,9 +542,31 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+// Admin authentication middleware
+const authenticateAdmin = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
+  }
+
+  jwt.verify(token, SECRET_KEY, (err, user) => {
+    if (err) {
+      console.error('Admin JWT Error:', err);
+      return res.status(403).json({ success: false, message: 'Invalid token.' });
+    }
+
+    req.admin = user;
+    next();
+  });
+};
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use('/uploads', express.static('uploads'));
+
+app.use('/admin', adminRoutes);
 
 // Ensure the uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -577,6 +600,17 @@ mongoose.connect('mongodb://127.0.0.1:27017/examreg', {
   .catch(err => console.error('MongoDB connection error:', err));
 
 // Define Student Schema
+// const studentSchema = new mongoose.Schema({
+//   rollNumber: String,
+//   name: String,
+//   gender: String,
+//   email: String,
+//   branch: String,
+//   year: String,
+//   eligible: Boolean,
+//   approved: Boolean,
+// });
+
 const studentSchema = new mongoose.Schema({
   rollNumber: String,
   name: String,
@@ -584,11 +618,16 @@ const studentSchema = new mongoose.Schema({
   email: String,
   branch: String,
   year: String,
+  section: String,
+  attendance: Number, // Added attendance field
   eligible: Boolean,
   approved: Boolean,
+  examRegistered: { type: Boolean, default: false }, // Added exam registration field
 });
 
-const Student = mongoose.model('Student', studentSchema);
+// Check if the model exists to avoid OverwriteModelError
+const Student = mongoose.models.Student || mongoose.model('Student', studentSchema);
+
 
 // Define Registration Schema and Model
 const registrationSchema = new mongoose.Schema({
@@ -657,6 +696,14 @@ app.post('/register', upload.single('image'), async (req, res) => {
     });
 
     await newRegistration.save();
+
+    // Update the student record to mark as registered for exam
+    await Student.findOneAndUpdate(
+      { rollNumber },
+      { examRegistered: true },
+      { new: true }
+    );
+
     res.json({ success: true, message: 'Registration successful' });
   } catch (error) {
     console.error('Registration error:', error);
@@ -665,13 +712,63 @@ app.post('/register', upload.single('image'), async (req, res) => {
 });
 
 // Define the route to fetch subjects based on branch and year
-app.get('/subjects', (req, res) => {
-  const { branch, year } = req.query;
-  const subjects = getSubjects(branch, year);
-  res.json(subjects);
+app.get('/subjects', async (req, res) => {
+  try {
+    const { branch, year } = req.query;
+    
+    if (!branch || !year) {
+      return res.status(400).json({ message: 'Branch and year are required' });
+    }
+
+    // Try to get subjects from database first
+    const Subject = require('./models/Subject');
+    const dbSubjects = await Subject.find({ 
+      branch, 
+      year, 
+      isActive: true 
+    }).select('subjectCode subjectName credits');
+
+    if (dbSubjects.length > 0) {
+      // Format subjects for compatibility with existing frontend
+      const formattedSubjects = dbSubjects.map(subject => 
+        `${subject.subjectCode} ${subject.subjectName}`
+      );
+      return res.json(formattedSubjects);
+    }
+
+    // Fallback to hardcoded subjects if no database subjects found
+    const subjects = getSubjects(branch, year);
+    res.json(subjects);
+  } catch (error) {
+    console.error('Error fetching subjects:', error);
+    // Fallback to hardcoded subjects on error
+    const { branch, year } = req.query;
+    const subjects = getSubjects(branch, year);
+    res.json(subjects);
+  }
 });
 
-// Endpoint to check eligibility
+// // Endpoint to check eligibility
+// app.get('/check-eligibility/:rollNumber', async (req, res) => {
+//   const rollNumber = req.params.rollNumber;
+//   console.log(`Checking eligibility for roll number: ${rollNumber}`);
+
+//   try {
+//     const student = await Student.findOne({ rollNumber });
+//     if (student) {
+//       console.log(`Student found: ${JSON.stringify(student)}`);
+//       res.json({ eligible: student.eligible });
+//     } else {
+//       console.log(`Student with roll number ${rollNumber} not found.`);
+//       res.status(404).json({ message: 'Student not found' });
+//     }
+//   } catch (error) {
+//     console.error('Error retrieving student:', error);
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// });
+
+
 app.get('/check-eligibility/:rollNumber', async (req, res) => {
   const rollNumber = req.params.rollNumber;
   console.log(`Checking eligibility for roll number: ${rollNumber}`);
@@ -680,6 +777,18 @@ app.get('/check-eligibility/:rollNumber', async (req, res) => {
     const student = await Student.findOne({ rollNumber });
     if (student) {
       console.log(`Student found: ${JSON.stringify(student)}`);
+
+      // Check eligibility based on attendance
+      if (student.attendance >= 75) {
+        student.eligible = true;
+      } else {
+        student.eligible = false;
+      }
+
+      // Save the updated eligibility status in the database
+      await student.save();
+
+      // Send the response with the updated eligibility status
       res.json({ eligible: student.eligible });
     } else {
       console.log(`Student with roll number ${rollNumber} not found.`);
@@ -690,6 +799,7 @@ app.get('/check-eligibility/:rollNumber', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 // Endpoint to fetch all student registrations for HOD
 app.get('/students', authenticateToken, async (req, res) => {
@@ -1015,18 +1125,28 @@ app.post('/hod/login', async (req, res) => {
 
 
 
-// //admin
-// // Admin Login
-// app.post('/admin/login', async (req, res) => {
-//   const { username, password } = req.body;
-//   const admin = await Admin.findOne({ username });
-//   if (admin && bcrypt.compareSync(password, admin.password)) {
-//     const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-//     res.json({ token });
-//   } else {
-//     res.status(401).json({ message: 'Invalid credentials' });
-//   }
-// });
+// Admin Login
+app.post('/admin/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const admin = await Admin.findOne({ username });
+    
+    if (!admin) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    const isMatch = await bcrypt.compare(password, admin.password);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign({ id: admin._id, username: admin.username }, SECRET_KEY, { expiresIn: '1h' });
+    res.json({ success: true, token, message: 'Login successful' });
+  } catch (error) {
+    console.error('Admin login error:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
 
 
 // Start the server

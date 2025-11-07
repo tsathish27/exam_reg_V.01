@@ -107,6 +107,7 @@ const generateHallTicket = async (registration) => {
     page.drawImage(signatureImage, { x: 400, y: 155, width: 100, height: 50 });
 
     page.drawText('Signature of the Candidate', { x: 50, y:150, size: 12, font: font, color: rgb(0, 0, 0) });
+    page.drawText('Signature of the HOD', { x: 250, y: 150, size: 12, font: font, color: rgb(0, 0, 0) });
     page.drawText('Controller of Examinations', { x: 400, y: 150, size: 12, font: font, color: rgb(0, 0, 0) });
 
     // Add Instructions
